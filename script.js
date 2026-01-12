@@ -1,11 +1,11 @@
-// IceBone Creator Hub - Main JavaScript
+// IceBone Creator Hub - Enhanced JavaScript
 
 // Brand Colors Configuration
 const COLORS = {
     background: {
         primary: '#0a0a0f',
         secondary: '#12121a',
-        card: 'rgba(18, 18, 30, 0.6)',
+        card: 'rgba(18, 18, 30, 0.8)',
     },
     glacier: {
         purple: '#b145ff',
@@ -23,6 +23,7 @@ const COLORS = {
 // Application State
 const appState = {
     isLive: false,
+    twitchChannel: 'icebone',
     stats: {
         twitch: { followers: '2.1K', avgViewers: '150+' },
         tiktok: { followers: '8.5K', likes: '45K+' },
@@ -31,29 +32,24 @@ const appState = {
     }
 };
 
+// Check if Twitch channel is live
+async function checkTwitchLive() {
+    try {
+        // For now, set to false. You can integrate Twitch API later
+        // This would require a backend or serverless function for API keys
+        return false;
+    } catch (error) {
+        console.log('Could not check live status');
+        return false;
+    }
+}
+
 // Utility Functions
 const createElement = (tag, className, content = '') => {
     const element = document.createElement(tag);
     if (className) element.className = className;
     if (content) element.textContent = content;
     return element;
-};
-
-const createIcon = (name) => {
-    const iconMap = {
-        'trending-up': '📈',
-        'users': '👥',
-        'video': '📹',
-        'message': '💬',
-        'sparkles': '✨',
-        'download': '⬇️',
-        'external': '↗️',
-        'twitch': '🎮',
-        'tiktok': '🎵',
-        'youtube': '▶️',
-        'instagram': '📸'
-    };
-    return iconMap[name] || '•';
 };
 
 // Component: Stat Block
@@ -77,13 +73,16 @@ const createStatBlock = (label, value, context, accent = 'purple') => {
 };
 
 // Component: Live Stat Card
-const createLiveStatCard = (platform, icon, value, label, accentColor, delay = 0) => {
+const createLiveStatCard = (platform, iconClass, value, label, accentColor, delay = 0) => {
     const card = createElement('div', 'live-stat-card');
     card.style.animationDelay = `${delay}ms`;
     card.style.borderColor = `${accentColor}40`;
     
-    const iconEl = createElement('div', 'live-stat-icon', icon);
-    iconEl.style.color = accentColor;
+    const iconEl = createElement('div', 'live-stat-icon');
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    icon.style.color = accentColor;
+    iconEl.appendChild(icon);
     
     const content = createElement('div', 'live-stat-content');
     const valueEl = createElement('div', 'live-stat-value', value);
@@ -102,15 +101,20 @@ const createLiveStatCard = (platform, icon, value, label, accentColor, delay = 0
 };
 
 // Component: Community Card
-const createCommunityCard = (icon, title, description, delay = 0) => {
+const createCommunityCard = (iconClass, title, description, delay = 0) => {
     const card = createElement('div', 'community-card');
     card.style.animationDelay = `${delay}ms`;
     
-    const iconEl = createElement('div', 'card-icon', icon);
+    const iconWrapper = createElement('div', 'card-icon');
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    icon.style.color = COLORS.glacier.cyan;
+    iconWrapper.appendChild(icon);
+    
     const titleEl = createElement('div', 'card-title', title);
     const descEl = createElement('div', 'card-description', description);
     
-    card.appendChild(iconEl);
+    card.appendChild(iconWrapper);
     card.appendChild(titleEl);
     card.appendChild(descEl);
     
@@ -118,14 +122,19 @@ const createCommunityCard = (icon, title, description, delay = 0) => {
 };
 
 // Component: Platform Card
-const createPlatformCard = (platform, icon, handle, stats, link, accentColor) => {
+const createPlatformCard = (platform, iconClass, handle, stats, link, accentColor) => {
     const card = createElement('div', 'platform-card');
+    card.style.borderColor = `${accentColor}40`;
     
     // Header
     const header = createElement('div', 'platform-header');
     const info = createElement('div', 'platform-info');
-    const iconEl = createElement('div', 'platform-icon', icon);
-    iconEl.style.color = accentColor;
+    
+    const iconWrapper = createElement('div', 'platform-icon');
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    icon.style.color = accentColor;
+    iconWrapper.appendChild(icon);
     
     const nameWrapper = createElement('div');
     const nameEl = createElement('div', 'platform-name', platform);
@@ -133,7 +142,7 @@ const createPlatformCard = (platform, icon, handle, stats, link, accentColor) =>
     nameWrapper.appendChild(nameEl);
     nameWrapper.appendChild(handleEl);
     
-    info.appendChild(iconEl);
+    info.appendChild(iconWrapper);
     info.appendChild(nameWrapper);
     header.appendChild(info);
     
@@ -142,6 +151,7 @@ const createPlatformCard = (platform, icon, handle, stats, link, accentColor) =>
     stats.forEach(stat => {
         const statEl = createElement('div', 'platform-stat');
         const valueEl = createElement('div', 'platform-stat-value', stat.value);
+        valueEl.style.color = accentColor;
         const labelEl = createElement('div', 'platform-stat-label', stat.label);
         statEl.appendChild(valueEl);
         statEl.appendChild(labelEl);
@@ -153,14 +163,35 @@ const createPlatformCard = (platform, icon, handle, stats, link, accentColor) =>
     linkEl.href = link;
     linkEl.target = '_blank';
     linkEl.rel = 'noopener noreferrer';
-    linkEl.textContent = `Visit ${platform} `;
-    linkEl.innerHTML += createIcon('external');
+    linkEl.style.color = accentColor;
+    linkEl.style.borderColor = `${accentColor}40`;
+    linkEl.style.background = `${accentColor}15`;
+    linkEl.innerHTML = `Visit ${platform} <i class="fas fa-arrow-right"></i>`;
     
     card.appendChild(header);
     card.appendChild(statsContainer);
     card.appendChild(linkEl);
     
     return card;
+};
+
+// Build Twitch Embed Section
+const buildTwitchEmbed = () => {
+    const section = createElement('div', 'twitch-embed-section');
+    const container = createElement('div', 'twitch-embed-container');
+    
+    // Create Twitch embed iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://player.twitch.tv/?channel=${appState.twitchChannel}&parent=${window.location.hostname}&muted=false`;
+    iframe.allowFullscreen = true;
+    iframe.scrolling = 'no';
+    iframe.frameBorder = '0';
+    iframe.allow = 'autoplay; fullscreen';
+    
+    container.appendChild(iframe);
+    section.appendChild(container);
+    
+    return section;
 };
 
 // Build Hero Section
@@ -171,7 +202,7 @@ const buildHeroSection = () => {
     // Badge
     const badge = createElement('div', 'hero-badge');
     const liveIndicator = createElement('span', 'live-indicator');
-    const badgeText = appState.isLive ? 'Join the stream right now' : 'Catch me live 4-5 times weekly';
+    const badgeText = appState.isLive ? '🔴 LIVE NOW - Join the stream!' : '🎮 Catch me live 4-5 times weekly';
     badge.appendChild(liveIndicator);
     badge.appendChild(document.createTextNode(badgeText));
     
@@ -184,17 +215,19 @@ const buildHeroSection = () => {
     
     // CTA Button
     const cta = createElement('a', 'cta-button');
-    cta.href = 'https://twitch.tv/icebone';
+    cta.href = `https://twitch.tv/${appState.twitchChannel}`;
     cta.target = '_blank';
     cta.rel = 'noopener noreferrer';
-    cta.textContent = 'Follow on Twitch ';
-    cta.innerHTML += createIcon('external');
+    cta.innerHTML = '<i class="fab fa-twitch"></i> Follow on Twitch';
     
     content.appendChild(badge);
     content.appendChild(title);
     content.appendChild(subtitle);
     content.appendChild(cta);
     section.appendChild(content);
+    
+    // Add Twitch embed if needed (visible even when offline)
+    section.appendChild(buildTwitchEmbed());
     
     return section;
 };
@@ -228,10 +261,10 @@ const buildStatsSection = () => {
     const liveGrid = createElement('div', 'live-stats-grid');
     
     const liveStats = [
-        { platform: 'Twitch', icon: createIcon('twitch'), value: appState.stats.twitch.followers, label: 'Followers', color: COLORS.glacier.purple, delay: 0 },
-        { platform: 'TikTok', icon: createIcon('tiktok'), value: appState.stats.tiktok.followers, label: 'Followers', color: COLORS.glacier.cyan, delay: 100 },
-        { platform: 'YouTube', icon: createIcon('youtube'), value: appState.stats.youtube.subscribers, label: 'Subscribers', color: COLORS.glacier.teal, delay: 200 },
-        { platform: 'Instagram', icon: createIcon('instagram'), value: appState.stats.instagram.followers, label: 'Followers', color: COLORS.glacier.yellow, delay: 300 }
+        { platform: 'Twitch', icon: 'fab fa-twitch', value: appState.stats.twitch.followers, label: 'Followers', color: COLORS.glacier.purple, delay: 0 },
+        { platform: 'TikTok', icon: 'fab fa-tiktok', value: appState.stats.tiktok.followers, label: 'Followers', color: COLORS.glacier.cyan, delay: 100 },
+        { platform: 'YouTube', icon: 'fab fa-youtube', value: appState.stats.youtube.subscribers, label: 'Subscribers', color: COLORS.glacier.teal, delay: 200 },
+        { platform: 'Instagram', icon: 'fab fa-instagram', value: appState.stats.instagram.followers, label: 'Followers', color: COLORS.glacier.yellow, delay: 300 }
     ];
     
     liveStats.forEach(stat => {
@@ -263,9 +296,9 @@ const buildCommunitySection = () => {
     const grid = createElement('div', 'community-grid');
     
     const cards = [
-        { icon: createIcon('users'), title: 'Real Connection', description: 'Not just numbers — actual community members who vibe with the content', delay: 0 },
-        { icon: createIcon('trending-up'), title: 'Steady Growth', description: 'Building sustainably without chasing trends that don\'t align', delay: 100 },
-        { icon: createIcon('sparkles'), title: 'Authentic Energy', description: 'What you see is what you get — no performance, just presence', delay: 200 }
+        { icon: 'fas fa-users', title: 'Real Connection', description: 'Not just numbers — actual community members who vibe with the content', delay: 0 },
+        { icon: 'fas fa-chart-line', title: 'Steady Growth', description: 'Building sustainably without chasing trends that don\'t align', delay: 100 },
+        { icon: 'fas fa-fire', title: 'Authentic Energy', description: 'What you see is what you get — no performance, just presence', delay: 200 }
     ];
     
     cards.forEach(card => {
@@ -295,7 +328,7 @@ const buildPlatformsSection = () => {
     const platforms = [
         {
             name: 'Twitch',
-            icon: createIcon('twitch'),
+            icon: 'fab fa-twitch',
             handle: 'icebone',
             stats: [
                 { value: appState.stats.twitch.followers, label: 'Followers' },
@@ -306,7 +339,7 @@ const buildPlatformsSection = () => {
         },
         {
             name: 'TikTok',
-            icon: createIcon('tiktok'),
+            icon: 'fab fa-tiktok',
             handle: 'icebone',
             stats: [
                 { value: appState.stats.tiktok.followers, label: 'Followers' },
@@ -317,7 +350,7 @@ const buildPlatformsSection = () => {
         },
         {
             name: 'YouTube',
-            icon: createIcon('youtube'),
+            icon: 'fab fa-youtube',
             handle: 'icebone',
             stats: [
                 { value: appState.stats.youtube.subscribers, label: 'Subscribers' },
@@ -328,7 +361,7 @@ const buildPlatformsSection = () => {
         },
         {
             name: 'Instagram',
-            icon: createIcon('instagram'),
+            icon: 'fab fa-instagram',
             handle: 'icebone',
             stats: [
                 { value: appState.stats.instagram.followers, label: 'Followers' },
@@ -367,8 +400,7 @@ const buildMediaKitSection = () => {
     // CTA Button
     const cta = createElement('a', 'cta-button');
     cta.href = '#'; // Add actual media kit link
-    cta.textContent = 'View Media Kit ';
-    cta.innerHTML += createIcon('download');
+    cta.innerHTML = '<i class="fas fa-download"></i> View Media Kit';
     
     content.appendChild(header);
     content.appendChild(cta);
@@ -379,8 +411,11 @@ const buildMediaKitSection = () => {
 };
 
 // Initialize Application
-const init = () => {
+const init = async () => {
     const root = document.getElementById('root');
+    
+    // Check if live
+    appState.isLive = await checkTwitchLive();
     
     // Clear root
     root.innerHTML = '';
@@ -393,6 +428,8 @@ const init = () => {
     root.appendChild(buildMediaKitSection());
     
     console.log('✅ IceBone Creator Hub initialized');
+    console.log(`🎮 Twitch: ${appState.twitchChannel}`);
+    console.log(`🔴 Live: ${appState.isLive ? 'Yes' : 'No'}`);
 };
 
 // Run when DOM is ready
